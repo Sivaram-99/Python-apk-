@@ -26,5 +26,7 @@ warn_on_root = 1
 android.api = 35
 android.minapi = 23
 android.archs = arm64-v8a
+
 android.accept_sdk_license = True
+
 android.sdk_path = /usr/local/lib/android/sdk
