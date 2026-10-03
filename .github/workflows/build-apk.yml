@@ -36,7 +36,7 @@ jobs:
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
-      - name: Verify Android SDK
+- name: Verify Android SDK
   shell: bash
   run: |
     echo "ANDROID_HOME=$ANDROID_HOME"
