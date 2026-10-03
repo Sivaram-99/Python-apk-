@@ -19,14 +19,14 @@ jobs:
     steps:
 
       # =========================================================
-      # Checkout repository
+      # CHECKOUT
       # =========================================================
       - name: Checkout source
         uses: actions/checkout@v4
 
 
       # =========================================================
-      # Python
+      # PYTHON
       # =========================================================
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,7 +35,7 @@ jobs:
 
 
       # =========================================================
-      # Java 17
+      # JAVA
       # =========================================================
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -45,14 +45,14 @@ jobs:
 
 
       # =========================================================
-      # Android SDK Command Line Tools
+      # ANDROID SDK
       # =========================================================
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
 
       # =========================================================
-      # Install Android SDK packages
+      # INSTALL ANDROID SDK PACKAGES
       # =========================================================
       - name: Install Android SDK packages
         shell: bash
@@ -60,7 +60,7 @@ jobs:
           set -e
 
           echo "========================================"
-          echo "ANDROID SDK SETUP"
+          echo "INSTALLING ANDROID SDK"
           echo "========================================"
 
           echo "ANDROID_HOME=$ANDROID_HOME"
@@ -68,11 +68,17 @@ jobs:
 
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
+          echo ""
+          echo "Checking sdkmanager..."
+
           if [ ! -f "$SDKMANAGER" ]; then
             echo "ERROR: sdkmanager not found:"
             echo "$SDKMANAGER"
             exit 1
           fi
+
+          echo "sdkmanager found:"
+          ls -lh "$SDKMANAGER"
 
           echo ""
           echo "Accepting Android SDK licenses..."
@@ -80,7 +86,7 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
 
           echo ""
-          echo "Installing required Android SDK packages..."
+          echo "Installing Android SDK packages..."
 
           "$SDKMANAGER" \
             "platform-tools" \
@@ -88,32 +94,35 @@ jobs:
             "build-tools;35.0.0"
 
           echo ""
-          echo "Installed SDK packages:"
+          echo "Installed Android SDK packages:"
+
           "$SDKMANAGER" --list_installed || true
 
           echo ""
-          echo "Build Tools 35:"
-          ls -lah "$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          echo "Build Tools 35.0.0:"
+
+          ls -lah \
+            "$ANDROID_SDK_ROOT/build-tools/35.0.0"
 
           echo ""
-          echo "Android SDK setup completed."
+          echo "Android SDK installation completed."
 
 
       # =========================================================
-      # Verify AIDL
+      # VERIFY GLOBAL AIDL
       # =========================================================
-      - name: Verify AIDL
+      - name: Verify Android AIDL
         shell: bash
         run: |
           set -e
 
           echo "========================================"
-          echo "VERIFYING AIDL"
+          echo "VERIFYING ANDROID AIDL"
           echo "========================================"
 
           AIDL="$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl"
 
-          echo "AIDL path:"
+          echo "AIDL:"
           echo "$AIDL"
 
           if [ ! -f "$AIDL" ]; then
@@ -121,13 +130,16 @@ jobs:
 
             echo ""
             echo "Available build tools:"
-            ls -lah "$ANDROID_SDK_ROOT/build-tools" || true
+
+            ls -lah \
+              "$ANDROID_SDK_ROOT/build-tools" || true
 
             exit 1
           fi
 
           echo ""
           echo "AIDL found:"
+
           ls -lh "$AIDL"
 
           echo ""
@@ -136,22 +148,35 @@ jobs:
           "$AIDL" --help >/dev/null
 
           echo ""
-          echo "AIDL is working correctly."
+          echo "AIDL is working."
 
 
       # =========================================================
-      # Install Buildozer
+      # INSTALL BUILDOZER
       # =========================================================
       - name: Install Buildozer
         shell: bash
         run: |
           set -e
 
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools wheel
+          echo "========================================"
+          echo "INSTALLING BUILDOZER"
+          echo "========================================"
 
-          pip install buildozer
-          pip install cython
+          python -m pip install --upgrade pip
+
+          python -m pip install \
+            --upgrade \
+            setuptools \
+            wheel
+
+          python -m pip install buildozer
+
+          python -m pip install cython
+
+          echo ""
+          echo "Python:"
+          python --version
 
           echo ""
           echo "Buildozer:"
@@ -163,7 +188,7 @@ jobs:
 
 
       # =========================================================
-      # Prepare Buildozer SDK
+      # PREPARE BUILDOZER ANDROID SDK
       # =========================================================
       - name: Prepare Buildozer Android SDK
         shell: bash
@@ -175,8 +200,10 @@ jobs:
           echo "========================================"
 
           BUILDOZER_DIR="$HOME/.buildozer/android"
+
           BUILDOZER_SDK="$BUILDOZER_DIR/platform/android-sdk"
 
+          echo ""
           echo "Buildozer directory:"
           echo "$BUILDOZER_DIR"
 
@@ -185,10 +212,9 @@ jobs:
           echo "$BUILDOZER_SDK"
 
           # -----------------------------------------------------
-          # IMPORTANT:
-          # Create the complete parent directory:
+          # Create:
           #
-          # /home/runner/.buildozer/android/platform/
+          # ~/.buildozer/android/platform/
           # -----------------------------------------------------
 
           echo ""
@@ -196,10 +222,18 @@ jobs:
 
           mkdir -p "$(dirname "$BUILDOZER_SDK")"
 
+          # -----------------------------------------------------
+          # Remove any previous SDK
+          # -----------------------------------------------------
+
           echo ""
           echo "Removing previous Buildozer SDK..."
 
           rm -rf "$BUILDOZER_SDK"
+
+          # -----------------------------------------------------
+          # Copy modern GitHub Android SDK
+          # -----------------------------------------------------
 
           echo ""
           echo "Copying Android SDK..."
@@ -207,43 +241,181 @@ jobs:
           cp -a "$ANDROID_SDK_ROOT" "$BUILDOZER_SDK"
 
           echo ""
-          echo "Buildozer SDK created."
+          echo "Modern Android SDK copied."
+
+
+          # =====================================================
+          # CREATE LEGACY BUILDOZER SDK STRUCTURE
+          # =====================================================
 
           echo ""
-          echo "Checking SDK:"
-          ls -lah "$BUILDOZER_SDK"
+          echo "========================================"
+          echo "CREATING LEGACY SDK COMPATIBILITY PATH"
+          echo "========================================"
 
           echo ""
-          echo "Checking build-tools:"
-          ls -lah "$BUILDOZER_SDK/build-tools"
+          echo "Buildozer expects:"
+          echo "$BUILDOZER_SDK/tools/bin/sdkmanager"
 
           echo ""
-          echo "Checking Build Tools 35:"
-          ls -lah "$BUILDOZER_SDK/build-tools/35.0.0"
+          echo "Modern Android SDK provides:"
+          echo "$BUILDOZER_SDK/cmdline-tools/latest/bin/sdkmanager"
+
+
+          # -----------------------------------------------------
+          # Remove tools directory if it exists
+          # -----------------------------------------------------
+
+          rm -rf "$BUILDOZER_SDK/tools"
+
+          # -----------------------------------------------------
+          # Create compatibility link
+          #
+          # tools -> cmdline-tools/latest
+          #
+          # Therefore:
+          #
+          # tools/bin/sdkmanager
+          #
+          # becomes:
+          #
+          # cmdline-tools/latest/bin/sdkmanager
+          # -----------------------------------------------------
+
+          ln -s \
+            "$BUILDOZER_SDK/cmdline-tools/latest" \
+            "$BUILDOZER_SDK/tools"
+
+
+          # =====================================================
+          # VERIFY SDKMANAGER
+          # =====================================================
 
           echo ""
-          echo "Checking AIDL..."
+          echo "========================================"
+          echo "VERIFYING SDKMANAGER"
+          echo "========================================"
 
-          if [ ! -f "$BUILDOZER_SDK/build-tools/35.0.0/aidl" ]; then
-            echo "ERROR: AIDL was not copied."
+          LEGACY_SDKMANAGER="$BUILDOZER_SDK/tools/bin/sdkmanager"
+
+          echo ""
+          echo "Legacy sdkmanager path:"
+          echo "$LEGACY_SDKMANAGER"
+
+          if [ ! -f "$LEGACY_SDKMANAGER" ]; then
 
             echo ""
-            echo "Buildozer SDK contents:"
-            find "$BUILDOZER_SDK" -maxdepth 3 -type d | sort || true
+            echo "ERROR: Legacy sdkmanager path does not exist."
+
+            echo ""
+            echo "Checking cmdline-tools:"
+
+            find \
+              "$BUILDOZER_SDK/cmdline-tools" \
+              -maxdepth 4 \
+              -type f \
+              -name "sdkmanager" \
+              -ls || true
+
+            echo ""
+            echo "Checking tools:"
+
+            ls -lah \
+              "$BUILDOZER_SDK/tools" || true
 
             exit 1
           fi
 
           echo ""
-          echo "AIDL found:"
-          ls -lh "$BUILDOZER_SDK/build-tools/35.0.0/aidl"
+          echo "sdkmanager found:"
+
+          ls -lh "$LEGACY_SDKMANAGER"
+
+          echo ""
+          echo "sdkmanager version:"
+
+          "$LEGACY_SDKMANAGER" --version
+
+
+          # =====================================================
+          # VERIFY BUILD TOOLS
+          # =====================================================
+
+          echo ""
+          echo "========================================"
+          echo "VERIFYING BUILD TOOLS"
+          echo "========================================"
+
+          if [ ! -d "$BUILDOZER_SDK/build-tools/35.0.0" ]; then
+            echo "ERROR: Build Tools 35.0.0 not found."
+            exit 1
+          fi
+
+          echo ""
+          echo "Build Tools 35.0.0:"
+
+          ls -lah \
+            "$BUILDOZER_SDK/build-tools/35.0.0"
+
+
+          # =====================================================
+          # VERIFY AIDL
+          # =====================================================
+
+          echo ""
+          echo "========================================"
+          echo "VERIFYING BUILDOZER AIDL"
+          echo "========================================"
+
+          BUILDOZER_AIDL="$BUILDOZER_SDK/build-tools/35.0.0/aidl"
+
+          echo ""
+          echo "AIDL:"
+          echo "$BUILDOZER_AIDL"
+
+          if [ ! -f "$BUILDOZER_AIDL" ]; then
+            echo "ERROR: AIDL was not copied."
+            exit 1
+          fi
+
+          ls -lh "$BUILDOZER_AIDL"
+
+          echo ""
+          echo "Testing AIDL..."
+
+          "$BUILDOZER_AIDL" --help >/dev/null
+
+          echo ""
+          echo "AIDL works."
+
+
+          # =====================================================
+          # FINAL SDK STRUCTURE
+          # =====================================================
+
+          echo ""
+          echo "========================================"
+          echo "BUILDOZER SDK READY"
+          echo "========================================"
+
+          echo ""
+          echo "SDK:"
+          echo "$BUILDOZER_SDK"
+
+          echo ""
+          echo "sdkmanager:"
+          echo "$BUILDOZER_SDK/tools/bin/sdkmanager"
+
+          echo ""
+          echo "AIDL:"
+          echo "$BUILDOZER_SDK/build-tools/35.0.0/aidl"
 
           echo ""
           echo "Buildozer SDK preparation completed."
 
 
       # =========================================================
-      # Configure Android environment
+      # CONFIGURE ANDROID ENVIRONMENT
       # =========================================================
       - name: Configure Android environment
         shell: bash
@@ -256,23 +428,47 @@ jobs:
           echo "CONFIGURING ANDROID ENVIRONMENT"
           echo "========================================"
 
+          echo ""
           echo "Using SDK:"
           echo "$BUILDOZER_SDK"
 
-          echo ""
+          # -----------------------------------------------------
+          # Environment variables
+          # -----------------------------------------------------
+
           echo "ANDROID_HOME=$BUILDOZER_SDK" >> "$GITHUB_ENV"
+
           echo "ANDROID_SDK_ROOT=$BUILDOZER_SDK" >> "$GITHUB_ENV"
+
           echo "ANDROIDSDK=$BUILDOZER_SDK" >> "$GITHUB_ENV"
 
+          # -----------------------------------------------------
+          # PATH
+          # -----------------------------------------------------
+
           echo "$BUILDOZER_SDK/platform-tools" >> "$GITHUB_PATH"
+
           echo "$BUILDOZER_SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+          echo "$BUILDOZER_SDK/tools/bin" >> "$GITHUB_PATH"
+
+
+          # =====================================================
+          # VERIFY SDKMANAGER
+          # =====================================================
+
+          echo ""
+          echo "Testing Buildozer sdkmanager..."
+
+          "$BUILDOZER_SDK/tools/bin/sdkmanager" --version
+
 
           echo ""
           echo "Android environment configured."
 
 
       # =========================================================
-      # Verify Buildozer SDK
+      # VERIFY BUILDOZER SDK
       # =========================================================
       - name: Verify Buildozer SDK
         shell: bash
@@ -289,40 +485,87 @@ jobs:
           echo "SDK:"
           echo "$SDK"
 
+
+          # -----------------------------------------------------
+          # SDK
+          # -----------------------------------------------------
+
           if [ ! -d "$SDK" ]; then
             echo "ERROR: Buildozer SDK does not exist."
             exit 1
           fi
 
-          echo ""
-          echo "Build tools:"
-          ls -lah "$SDK/build-tools"
+
+          # -----------------------------------------------------
+          # sdkmanager
+          # -----------------------------------------------------
 
           echo ""
-          echo "Build Tools 35:"
-          ls -lah "$SDK/build-tools/35.0.0"
+          echo "sdkmanager:"
+
+          ls -lh \
+            "$SDK/tools/bin/sdkmanager"
+
+          "$SDK/tools/bin/sdkmanager" --version
+
+
+          # -----------------------------------------------------
+          # Build tools
+          # -----------------------------------------------------
+
+          echo ""
+          echo "Build tools:"
+
+          ls -lah \
+            "$SDK/build-tools"
+
+
+          # -----------------------------------------------------
+          # Build Tools 35
+          # -----------------------------------------------------
+
+          echo ""
+          echo "Build Tools 35.0.0:"
+
+          ls -lah \
+            "$SDK/build-tools/35.0.0"
+
+
+          # -----------------------------------------------------
+          # AIDL
+          # -----------------------------------------------------
 
           echo ""
           echo "AIDL:"
-          ls -lh "$SDK/build-tools/35.0.0/aidl"
+
+          ls -lh \
+            "$SDK/build-tools/35.0.0/aidl"
+
+
+          # -----------------------------------------------------
+          # Test AIDL
+          # -----------------------------------------------------
 
           echo ""
           echo "Testing AIDL..."
 
           "$SDK/build-tools/35.0.0/aidl" --help >/dev/null
 
+
           echo ""
-          echo "AIDL works."
+          echo "========================================"
+          echo "BUILDOZER SDK VERIFIED"
+          echo "========================================"
 
 
       # =========================================================
-      # Show final environment
+      # SHOW BUILD ENVIRONMENT
       # =========================================================
       - name: Show build environment
         shell: bash
         run: |
           echo "========================================"
-          echo "FINAL BUILD ENVIRONMENT"
+          echo "BUILD ENVIRONMENT"
           echo "========================================"
 
           echo ""
@@ -350,15 +593,19 @@ jobs:
           echo "$ANDROIDSDK"
 
           echo ""
+          echo "sdkmanager:"
+          "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" --version
+
+          echo ""
           echo "AIDL:"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl" --help >/dev/null
 
           echo ""
-          echo "Environment ready."
+          echo "Build environment ready."
 
 
       # =========================================================
-      # Build APK
+      # BUILD APK
       # =========================================================
       - name: Build APK
         shell: bash
@@ -373,7 +620,7 @@ jobs:
 
 
       # =========================================================
-      # Check APK
+      # CHECK APK
       # =========================================================
       - name: Check APK
         shell: bash
@@ -381,34 +628,41 @@ jobs:
           set -e
 
           echo "========================================"
-          echo "CHECKING GENERATED APK"
+          echo "CHECKING APK"
           echo "========================================"
 
           if [ ! -d "bin" ]; then
-            echo "ERROR: bin directory was not created."
+            echo "ERROR: bin directory not found."
             exit 1
           fi
 
           echo ""
-          echo "Contents of bin:"
+          echo "bin directory:"
+
           ls -lah bin/
+
 
           APK_COUNT=$(find bin -type f -name "*.apk" | wc -l)
 
           echo ""
-          echo "APK count: $APK_COUNT"
+          echo "APK count:"
+          echo "$APK_COUNT"
+
 
           if [ "$APK_COUNT" -eq 0 ]; then
             echo "ERROR: No APK was generated."
             exit 1
           fi
 
+
           echo ""
-          echo "APK generated successfully."
+          echo "========================================"
+          echo "APK GENERATED SUCCESSFULLY"
+          echo "========================================"
 
 
       # =========================================================
-      # Upload APK
+      # UPLOAD APK
       # =========================================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
