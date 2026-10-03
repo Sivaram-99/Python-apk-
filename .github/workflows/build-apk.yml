@@ -37,19 +37,34 @@ jobs:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
       - name: Verify Android SDK
-        shell: bash
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+  shell: bash
+  run: |
+    echo "ANDROID_HOME=$ANDROID_HOME"
+    echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
-          echo "Installed SDK packages:"
-          sdkmanager --list_installed || true
+    echo "Installed SDK packages:"
+    sdkmanager --list_installed || true
 
-          echo "Searching for AIDL:"
-          find "$ANDROID_SDK_ROOT" -name aidl -type f -print
+    echo "Checking AIDL:"
+    AIDL="$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl"
 
-          echo "Checking AIDL:"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl" --version
+    if [ ! -f "$AIDL" ]; then
+      echo "ERROR: AIDL was not found!"
+      exit 1
+    fi
+
+    if [ ! -x "$AIDL" ]; then
+      echo "ERROR: AIDL exists but is not executable!"
+      exit 1
+    fi
+
+    echo "AIDL found successfully:"
+    ls -lh "$AIDL"
+
+    echo "AIDL executable test:"
+    "$AIDL" --help >/dev/null
+
+    echo "AIDL is installed and working."
 
       - name: Install Buildozer
         run: |
