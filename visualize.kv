@@ -1,0 +1,235 @@
+
+#:import dp kivy.metrics.dp
+
+<NavButton@Button>:
+    background_normal: ''
+    background_color: (0,0,0,0)
+    color: (.65,.75,.88,1)
+    font_size: dp(12)
+    bold: True
+
+<Root>:
+    transition: FadeTransition(duration=.25)
+    HomeScreen:
+    VisualScreen:
+    SettingsScreen:
+
+<HomeScreen>:
+    name: "home"
+    FloatLayout:
+        ParticleField:
+            size_hint: 1, 1
+
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(18), dp(42), dp(18), dp(12)
+            spacing: dp(12)
+
+            BoxLayout:
+                size_hint_y: None
+                height: dp(62)
+                Label:
+                    text: "VISUALIZE"
+                    color: (.92,.97,1,1)
+                    font_size: dp(25)
+                    bold: True
+                    halign: "left"
+                Label:
+                    id: status
+                    text: "LIVE • streaming"
+                    color: (.2,.78,1,1)
+                    font_size: dp(11)
+                    halign: "right"
+
+            Label:
+                text: "Turn data into motion."
+                color: (.48,.58,.72,1)
+                font_size: dp(15)
+                size_hint_y: None
+                height: dp(30)
+                halign: "left"
+
+            BoxLayout:
+                size_hint_y: None
+                height: dp(115)
+                spacing: dp(10)
+                GlassCard:
+                    id: c1
+                    title: "SIGNAL"
+                    value: "82.4"
+                GlassCard:
+                    id: c2
+                    title: "EVENTS"
+                    value: "1,284"
+                GlassCard:
+                    id: c3
+                    title: "EFFICIENCY"
+                    value: "64.8%"
+
+            AnimatedChart:
+                size_hint_y: None
+                height: dp(235)
+
+            BoxLayout:
+                size_hint_y: None
+                height: dp(54)
+                spacing: dp(10)
+                Button:
+                    text: "REFRESH DATA"
+                    background_normal: ''
+                    background_color: (.08,.35,.55,1)
+                    color: (1,1,1,1)
+                    bold: True
+                    on_release: root.refresh()
+                Button:
+                    text: "OPEN VISUALIZER"
+                    background_normal: ''
+                    background_color: (.10,.13,.21,1)
+                    color: (.5,.85,1,1)
+                    bold: True
+                    on_release: app.root.current = "visual"
+
+            Widget:
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(66)
+            pos_hint: {"x":0,"y":0}
+            padding: dp(8)
+            spacing: dp(6)
+            NavButton:
+                text: "⌂  HOME"
+                on_release: app.root.current = "home"
+            NavButton:
+                text: "◉  VISUAL"
+                on_release: app.root.current = "visual"
+            NavButton:
+                text: "⚙  SETTINGS"
+                on_release: app.root.current = "settings"
+
+<VisualScreen>:
+    name: "visual"
+    FloatLayout:
+        ParticleField:
+            size_hint: 1,1
+
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(18),dp(42),dp(18),dp(12)
+            spacing: dp(12)
+
+            BoxLayout:
+                size_hint_y: None
+                height: dp(55)
+                Label:
+                    text: "LIVE VISUALIZER"
+                    color: (.92,.97,1,1)
+                    font_size: dp(22)
+                    bold: True
+                Button:
+                    text: "BACK"
+                    size_hint_x: None
+                    width: dp(80)
+                    background_normal: ''
+                    background_color: (.08,.12,.19,1)
+                    color: (.55,.85,1,1)
+                    on_release: app.root.current = "home"
+
+            RadialViz:
+                size_hint_y: None
+                height: dp(320)
+
+            Label:
+                text: "ORBITAL ACTIVITY"
+                color: (.55,.65,.78,1)
+                font_size: dp(12)
+                size_hint_y: None
+                height: dp(25)
+
+            AnimatedChart:
+                size_hint_y: None
+                height: dp(220)
+
+            Label:
+                text: "Touch, rotate, and explore — more visual modes can be added here."
+                color: (.42,.52,.65,1)
+                font_size: dp(12)
+                halign: "center"
+                text_size: self.width, None
+
+            Widget:
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(66)
+            padding: dp(8)
+            spacing: dp(6)
+            NavButton:
+                text: "⌂  HOME"
+                on_release: app.root.current = "home"
+            NavButton:
+                text: "◉  VISUAL"
+                color: (.2,.78,1,1)
+                on_release: app.root.current = "visual"
+            NavButton:
+                text: "⚙  SETTINGS"
+                on_release: app.root.current = "settings"
+
+<SettingsScreen>:
+    name: "settings"
+    FloatLayout:
+        ParticleField:
+            size_hint: 1,1
+        BoxLayout:
+            orientation: "vertical"
+            padding: dp(18),dp(42),dp(18),dp(12)
+            spacing: dp(14)
+            Label:
+                text: "SETTINGS"
+                color: (.92,.97,1,1)
+                font_size: dp(25)
+                bold: True
+                size_hint_y: None
+                height: dp(55)
+            Label:
+                text: "Visualization Engine"
+                color: (.55,.65,.78,1)
+                size_hint_y: None
+                height: dp(30)
+            Button:
+                text: "Particle intensity     •     HIGH"
+                background_normal: ''
+                background_color: (.07,.10,.17,1)
+                color: (.7,.85,1,1)
+                size_hint_y: None
+                height: dp(58)
+            Button:
+                text: "Animation quality     •     60 FPS"
+                background_normal: ''
+                background_color: (.07,.10,.17,1)
+                color: (.7,.85,1,1)
+                size_hint_y: None
+                height: dp(58)
+            Button:
+                text: "Theme     •     Midnight"
+                background_normal: ''
+                background_color: (.07,.10,.17,1)
+                color: (.7,.85,1,1)
+                size_hint_y: None
+                height: dp(58)
+            Widget:
+        BoxLayout:
+            size_hint_y: None
+            height: dp(66)
+            padding: dp(8)
+            spacing: dp(6)
+            NavButton:
+                text: "⌂  HOME"
+                on_release: app.root.current = "home"
+            NavButton:
+                text: "◉  VISUAL"
+                on_release: app.root.current = "visual"
+            NavButton:
+                text: "⚙  SETTINGS"
+                color: (.2,.78,1,1)
+                on_release: app.root.current = "settings"
