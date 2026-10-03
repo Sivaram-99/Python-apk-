@@ -9,12 +9,15 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out source
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -29,34 +32,35 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager --licenses > /dev/null || true
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "cmdline-tools;latest"
-
-      - name: Verify AIDL
+      - name: Verify Android SDK
+        shell: bash
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          find "$ANDROID_HOME" -name aidl -type f -print
-          "$ANDROID_HOME/build-tools/35.0.0/aidl" --version
 
-      - name: Install Buildozer dependencies
+          echo "Installed SDK packages:"
+          sdkmanager --list_installed || true
+
+          echo "Searching for AIDL:"
+          find "$ANDROID_SDK_ROOT" -name aidl -type f -print
+
+          echo "Checking AIDL:"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl" --version
+
+      - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython
 
-      - name: Build debug APK
+      - name: Build APK
         run: |
           buildozer -v android debug
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: visualize-debug-apk
