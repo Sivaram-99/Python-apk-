@@ -18,16 +18,25 @@ jobs:
 
     steps:
 
+      # =========================================================
+      # Checkout repository
+      # =========================================================
       - name: Checkout source
         uses: actions/checkout@v4
 
 
+      # =========================================================
+      # Python
+      # =========================================================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
 
+      # =========================================================
+      # Java 17
+      # =========================================================
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -35,30 +44,43 @@ jobs:
           java-version: "17"
 
 
+      # =========================================================
+      # Android SDK Command Line Tools
+      # =========================================================
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
 
+      # =========================================================
+      # Install Android SDK packages
+      # =========================================================
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -e
 
           echo "========================================"
-          echo "INSTALLING ANDROID SDK"
+          echo "ANDROID SDK SETUP"
           echo "========================================"
 
+          echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
+          if [ ! -f "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found:"
+            echo "$SDKMANAGER"
+            exit 1
+          fi
+
           echo ""
-          echo "Accepting licenses..."
+          echo "Accepting Android SDK licenses..."
 
           yes | "$SDKMANAGER" --licenses >/dev/null || true
 
           echo ""
-          echo "Installing SDK packages..."
+          echo "Installing required Android SDK packages..."
 
           "$SDKMANAGER" \
             "platform-tools" \
@@ -66,13 +88,60 @@ jobs:
             "build-tools;35.0.0"
 
           echo ""
-          echo "SDK installation complete."
+          echo "Installed SDK packages:"
+          "$SDKMANAGER" --list_installed || true
 
           echo ""
-          echo "Build tools:"
+          echo "Build Tools 35:"
           ls -lah "$ANDROID_SDK_ROOT/build-tools/35.0.0"
 
+          echo ""
+          echo "Android SDK setup completed."
 
+
+      # =========================================================
+      # Verify AIDL
+      # =========================================================
+      - name: Verify AIDL
+        shell: bash
+        run: |
+          set -e
+
+          echo "========================================"
+          echo "VERIFYING AIDL"
+          echo "========================================"
+
+          AIDL="$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl"
+
+          echo "AIDL path:"
+          echo "$AIDL"
+
+          if [ ! -f "$AIDL" ]; then
+            echo "ERROR: AIDL was not found."
+
+            echo ""
+            echo "Available build tools:"
+            ls -lah "$ANDROID_SDK_ROOT/build-tools" || true
+
+            exit 1
+          fi
+
+          echo ""
+          echo "AIDL found:"
+          ls -lh "$AIDL"
+
+          echo ""
+          echo "Testing AIDL..."
+
+          "$AIDL" --help >/dev/null
+
+          echo ""
+          echo "AIDL is working correctly."
+
+
+      # =========================================================
+      # Install Buildozer
+      # =========================================================
       - name: Install Buildozer
         shell: bash
         run: |
@@ -85,9 +154,17 @@ jobs:
           pip install cython
 
           echo ""
+          echo "Buildozer:"
           buildozer --version
 
+          echo ""
+          echo "Cython:"
+          cython --version
 
+
+      # =========================================================
+      # Prepare Buildozer SDK
+      # =========================================================
       - name: Prepare Buildozer Android SDK
         shell: bash
         run: |
@@ -103,15 +180,30 @@ jobs:
           echo "Buildozer directory:"
           echo "$BUILDOZER_DIR"
 
+          echo ""
           echo "Buildozer SDK:"
           echo "$BUILDOZER_SDK"
 
-          # Remove anything Buildozer may have created.
+          # -----------------------------------------------------
+          # IMPORTANT:
+          # Create the complete parent directory:
+          #
+          # /home/runner/.buildozer/android/platform/
+          # -----------------------------------------------------
+
+          echo ""
+          echo "Creating Buildozer platform directory..."
+
+          mkdir -p "$(dirname "$BUILDOZER_SDK")"
+
+          echo ""
+          echo "Removing previous Buildozer SDK..."
+
           rm -rf "$BUILDOZER_SDK"
 
-          mkdir -p "$BUILDOZER_DIR"
+          echo ""
+          echo "Copying Android SDK..."
 
-          # COPY the SDK instead of using a symlink.
           cp -a "$ANDROID_SDK_ROOT" "$BUILDOZER_SDK"
 
           echo ""
@@ -130,17 +222,29 @@ jobs:
           ls -lah "$BUILDOZER_SDK/build-tools/35.0.0"
 
           echo ""
-          echo "Checking AIDL:"
+          echo "Checking AIDL..."
 
           if [ ! -f "$BUILDOZER_SDK/build-tools/35.0.0/aidl" ]; then
             echo "ERROR: AIDL was not copied."
+
+            echo ""
+            echo "Buildozer SDK contents:"
+            find "$BUILDOZER_SDK" -maxdepth 3 -type d | sort || true
+
             exit 1
           fi
 
+          echo ""
           echo "AIDL found:"
           ls -lh "$BUILDOZER_SDK/build-tools/35.0.0/aidl"
 
+          echo ""
+          echo "Buildozer SDK preparation completed."
 
+
+      # =========================================================
+      # Configure Android environment
+      # =========================================================
       - name: Configure Android environment
         shell: bash
         run: |
@@ -148,6 +252,14 @@ jobs:
 
           BUILDOZER_SDK="$HOME/.buildozer/android/platform/android-sdk"
 
+          echo "========================================"
+          echo "CONFIGURING ANDROID ENVIRONMENT"
+          echo "========================================"
+
+          echo "Using SDK:"
+          echo "$BUILDOZER_SDK"
+
+          echo ""
           echo "ANDROID_HOME=$BUILDOZER_SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$BUILDOZER_SDK" >> "$GITHUB_ENV"
           echo "ANDROIDSDK=$BUILDOZER_SDK" >> "$GITHUB_ENV"
@@ -156,10 +268,12 @@ jobs:
           echo "$BUILDOZER_SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
           echo ""
-          echo "Buildozer Android SDK configured as:"
-          echo "$BUILDOZER_SDK"
+          echo "Android environment configured."
 
 
+      # =========================================================
+      # Verify Buildozer SDK
+      # =========================================================
       - name: Verify Buildozer SDK
         shell: bash
         run: |
@@ -175,16 +289,25 @@ jobs:
           echo "SDK:"
           echo "$SDK"
 
+          if [ ! -d "$SDK" ]; then
+            echo "ERROR: Buildozer SDK does not exist."
+            exit 1
+          fi
+
           echo ""
           echo "Build tools:"
           ls -lah "$SDK/build-tools"
+
+          echo ""
+          echo "Build Tools 35:"
+          ls -lah "$SDK/build-tools/35.0.0"
 
           echo ""
           echo "AIDL:"
           ls -lh "$SDK/build-tools/35.0.0/aidl"
 
           echo ""
-          echo "Testing AIDL:"
+          echo "Testing AIDL..."
 
           "$SDK/build-tools/35.0.0/aidl" --help >/dev/null
 
@@ -192,35 +315,88 @@ jobs:
           echo "AIDL works."
 
 
+      # =========================================================
+      # Show final environment
+      # =========================================================
+      - name: Show build environment
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "FINAL BUILD ENVIRONMENT"
+          echo "========================================"
+
+          echo ""
+          echo "Python:"
+          python --version
+
+          echo ""
+          echo "Java:"
+          java -version
+
+          echo ""
+          echo "Buildozer:"
+          buildozer --version
+
+          echo ""
+          echo "ANDROID_HOME:"
+          echo "$ANDROID_HOME"
+
+          echo ""
+          echo "ANDROID_SDK_ROOT:"
+          echo "$ANDROID_SDK_ROOT"
+
+          echo ""
+          echo "ANDROIDSDK:"
+          echo "$ANDROIDSDK"
+
+          echo ""
+          echo "AIDL:"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl" --help >/dev/null
+
+          echo ""
+          echo "Environment ready."
+
+
+      # =========================================================
+      # Build APK
+      # =========================================================
       - name: Build APK
         shell: bash
         run: |
           set -e
 
           echo "========================================"
-          echo "BUILDING APK"
+          echo "BUILDING ANDROID APK"
           echo "========================================"
 
           buildozer -v android debug
 
 
+      # =========================================================
+      # Check APK
+      # =========================================================
       - name: Check APK
         shell: bash
         run: |
           set -e
 
           echo "========================================"
-          echo "CHECKING APK"
+          echo "CHECKING GENERATED APK"
           echo "========================================"
 
           if [ ! -d "bin" ]; then
-            echo "ERROR: bin directory not found."
+            echo "ERROR: bin directory was not created."
             exit 1
           fi
 
+          echo ""
+          echo "Contents of bin:"
           ls -lah bin/
 
           APK_COUNT=$(find bin -type f -name "*.apk" | wc -l)
+
+          echo ""
+          echo "APK count: $APK_COUNT"
 
           if [ "$APK_COUNT" -eq 0 ]; then
             echo "ERROR: No APK was generated."
@@ -231,6 +407,9 @@ jobs:
           echo "APK generated successfully."
 
 
+      # =========================================================
+      # Upload APK
+      # =========================================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
