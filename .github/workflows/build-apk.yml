@@ -1,4 +1,3 @@
-
 name: Build Android APK
 
 on:
@@ -21,42 +20,23 @@ jobs:
 
     steps:
 
-      # =========================================================
-      # Checkout
-      # =========================================================
       - name: Checkout source
         uses: actions/checkout@v4
 
-
-      # =========================================================
-      # Python
-      # =========================================================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-
-      # =========================================================
-      # Java 17
-      # =========================================================
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-
-      # =========================================================
-      # Android SDK Command Line Tools
-      # =========================================================
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-
-      # =========================================================
-      # Install Android SDK packages manually
-      # =========================================================
       - name: Install Android SDK packages
         shell: bash
         run: |
@@ -73,12 +53,7 @@ jobs:
 
           if [ ! -f "$SDKMANAGER" ]; then
             echo "latest sdkmanager not found."
-
             echo "Searching for sdkmanager..."
-            find "$ANDROID_SDK_ROOT/cmdline-tools" \
-              -name sdkmanager \
-              -type f \
-              -print
 
             SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" \
               -name sdkmanager \
@@ -96,15 +71,13 @@ jobs:
           echo "Using sdkmanager:"
           echo "$SDKMANAGER"
 
-          chmod +x "$SDKMANAGER"
-
           echo ""
           echo "Accepting Android SDK licenses..."
 
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          yes | "$SDKMANAGER" --licenses || true
 
           echo ""
-          echo "Installing Android packages..."
+          echo "Installing Android SDK packages..."
 
           "$SDKMANAGER" \
             "platform-tools" \
@@ -114,10 +87,6 @@ jobs:
           echo ""
           echo "Android SDK packages installed successfully."
 
-
-      # =========================================================
-      # Verify AIDL
-      # =========================================================
       - name: Verify AIDL
         shell: bash
         run: |
@@ -133,17 +102,11 @@ jobs:
           echo "$AIDL"
 
           if [ ! -f "$AIDL" ]; then
-            echo ""
             echo "ERROR: AIDL was not found!"
             echo ""
             echo "Build tools directory:"
             ls -lah "$ANDROID_SDK_ROOT/build-tools/35.0.0/" || true
             exit 1
-          fi
-
-          if [ ! -x "$AIDL" ]; then
-            echo "ERROR: AIDL is not executable."
-            chmod +x "$AIDL"
           fi
 
           echo ""
@@ -158,10 +121,6 @@ jobs:
           echo ""
           echo "AIDL is working correctly."
 
-
-      # =========================================================
-      # Show Android Environment
-      # =========================================================
       - name: Show Android environment
         shell: bash
         run: |
@@ -188,10 +147,6 @@ jobs:
           echo "Python:"
           python --version
 
-
-      # =========================================================
-      # Install Buildozer
-      # =========================================================
       - name: Install Buildozer
         shell: bash
         run: |
@@ -201,10 +156,6 @@ jobs:
           pip install buildozer
           pip install cython
 
-
-      # =========================================================
-      # Verify Buildozer
-      # =========================================================
       - name: Verify Buildozer
         shell: bash
         run: |
@@ -218,10 +169,6 @@ jobs:
           echo "Cython:"
           cython --version
 
-
-      # =========================================================
-      # Build APK
-      # =========================================================
       - name: Build APK
         shell: bash
         run: |
@@ -233,10 +180,6 @@ jobs:
 
           buildozer -v android debug
 
-
-      # =========================================================
-      # Check APK
-      # =========================================================
       - name: Check APK
         shell: bash
         run: |
@@ -262,10 +205,6 @@ jobs:
           echo "APK generated successfully."
           echo "APK count: $APK_COUNT"
 
-
-      # =========================================================
-      # Upload APK
-      # =========================================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
